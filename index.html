@@ -38,6 +38,7 @@
         }
         .btn-secondary { @apply bg-slate-600 hover:bg-slate-500 text-slate-100 focus:ring-slate-500; }
         .btn-success { @apply bg-emerald-500 hover:bg-emerald-400 text-white focus:ring-emerald-400; }
+        .btn-info { @apply bg-cyan-500 hover:bg-cyan-400 text-white focus:ring-cyan-400; }
         
         .section-title { 
             @apply text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-cyan-300 mb-8 pb-3 border-b-2 border-slate-700; 
@@ -120,6 +121,23 @@
             @apply text-xs text-slate-400 mt-3 text-center;
         }
 
+        /* Modal Styling */
+        .modal-overlay {
+            @apply fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-300 ease-in-out opacity-0 pointer-events-none;
+        }
+        .modal-overlay.active {
+            @apply opacity-100 pointer-events-auto;
+        }
+        .modal-content {
+            @apply bg-slate-800 p-6 rounded-xl shadow-2xl max-w-2xl w-full m-4 transform scale-95 transition-transform duration-300 ease-in-out;
+        }
+        .modal-overlay.active .modal-content {
+            @apply scale-100;
+        }
+        .modal-close-btn {
+            @apply absolute top-4 right-4 text-slate-400 hover:text-sky-300 transition-colors;
+        }
+
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -154,6 +172,10 @@
                     <button id="loadCsvBtn" class="btn btn-secondary w-full sm:w-auto whitespace-nowrap">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
                         Load CSV
+                    </button>
+                    <button id="viewCsvFormatBtn" class="btn btn-info w-full sm:w-auto whitespace-nowrap">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>
+                        View CSV Format
                     </button>
                 </div>
             </div>
@@ -247,6 +269,19 @@
         </footer>
     </div>
 
+    <div id="csvFormatModal" class="modal-overlay">
+        <div class="modal-content relative">
+            <button id="closeCsvModalBtn" class="modal-close-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <h3 class="text-2xl font-semibold text-sky-300 mb-4 text-center">CSV Format Example</h3>
+            <img id="csvFormatImage" src="https://storage.googleapis.com/gemini-prod-us-west1-0000/user_upload/image_486e91.png_49b13f04d2f44891a1bf9e9bc5a9a50e.png" alt="CSV Format Example" class="rounded-lg shadow-md max-h-[70vh] mx-auto">
+            <p class="text-xs text-slate-400 mt-4 text-center">Ensure your CSV follows this structure for successful import.</p>
+        </div>
+    </div>
+
 <script>
     // --- Global State and Configuration ---
     let appState = {
@@ -263,8 +298,7 @@
     };
 
     // --- DOM Elements ---
-    const teamInfoContainer = document.getElementById('teamInfoContainer'); // Changed from teamNamesContainer
-    // const outrightOddsContainer = document.getElementById('outrightOddsContainer'); // No longer separate
+    const teamInfoContainer = document.getElementById('teamInfoContainer'); 
     const r1MatchesContainer = document.getElementById('r1MatchesContainer');
     const h2hProbsContainer = document.getElementById('h2hProbsContainer');
     const resultsTableBody = document.getElementById('resultsTableBody');
@@ -274,6 +308,9 @@
     const marginDisplayEl = document.getElementById('marginDisplay');
     const marginInputEl = document.getElementById('marginInput');
     const autoAdjustStatusEl = document.getElementById('autoAdjustStatus');
+    const csvFormatModal = document.getElementById('csvFormatModal');
+    const viewCsvFormatBtn = document.getElementById('viewCsvFormatBtn');
+    const closeCsvModalBtn = document.getElementById('closeCsvModalBtn');
 
 
     // --- UI Navigation Functions ---
@@ -1185,6 +1222,14 @@
 
 
         document.getElementById('loadCsvBtn').addEventListener('click', handleLoadCsv);
+        viewCsvFormatBtn.addEventListener('click', () => csvFormatModal.classList.add('active'));
+        closeCsvModalBtn.addEventListener('click', () => csvFormatModal.classList.remove('active'));
+        csvFormatModal.addEventListener('click', (e) => { // Close on overlay click
+            if (e.target === csvFormatModal) {
+                csvFormatModal.classList.remove('active');
+            }
+        });
+
 
         document.getElementById('proceedToH2HBtn').addEventListener('click', () => {
             if (collectAndValidateStep1Data()) {

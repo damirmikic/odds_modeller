@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Group Odds Simulation Tool - Pro V2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            @apply bg-gradient-to-br from-slate-900 to-slate-800 text-slate-200;
+            scroll-behavior: smooth;
+        }
+        /* Enhanced Input Fields */
+        .input-label { @apply block text-sm font-medium text-sky-300 mb-1.5; }
+        .input-field { 
+            @apply mt-1 block w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-lg shadow-sm 
+                   text-slate-100 placeholder-slate-400
+                   focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 sm:text-sm
+                   transition-all duration-200 ease-in-out;
+        }
+        .input-field:focus {
+            @apply bg-slate-700;
+        }
+        /* Modernized Buttons */
+        .btn { 
+            @apply px-6 py-3 border border-transparent rounded-xl shadow-lg text-sm font-semibold 
+                   focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900
+                   transition-all duration-200 ease-in-out transform hover:-translate-y-0.5 hover:shadow-xl; 
+        }
+        .btn-primary { 
+            @apply bg-sky-500 hover:bg-sky-400 text-white focus:ring-sky-400; 
+            background-image: linear-gradient(to right, #0ea5e9, #38bdf8);
+        }
+        .btn-primary:hover {
+            background-image: linear-gradient(to right, #0ea5e9, #0284c7);
+        }
+        .btn-secondary { @apply bg-slate-600 hover:bg-slate-500 text-slate-100 focus:ring-slate-500; }
+        .btn-success { @apply bg-emerald-500 hover:bg-emerald-400 text-white focus:ring-emerald-400; }
+        
+        .section-title { 
+            @apply text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-cyan-300 mb-8 pb-3 border-b-2 border-slate-700; 
+            font-family: 'Poppins', sans-serif;
+        }
+        /* Table Styling */
+        .table-th { @apply px-6 py-3.5 text-left text-xs font-semibold text-sky-300 uppercase tracking-wider bg-slate-800/60; }
+        .table-td { @apply px-6 py-3.5 whitespace-nowrap text-sm text-slate-300; }
+        .table-container { @apply overflow-x-auto shadow-2xl rounded-xl bg-slate-800/40 backdrop-blur-sm border border-slate-700; }
+        
+        /* Card Styling */
+        .card { 
+            @apply bg-slate-800/70 backdrop-blur-md shadow-2xl rounded-2xl p-6 md:p-8 mb-10 border border-slate-700/50; 
+        }
+        #resultsTable tr:not(:last-child) td {
+            border-bottom: 1px solid #334155; /* slate-700 */
+        }
+        .csv-format-details { @apply text-xs text-slate-400 mt-2 list-disc list-inside bg-slate-700/50 p-4 rounded-lg border border-slate-600; }
+        .btn:disabled { @apply opacity-50 cursor-not-allowed hover:scale-100 hover:-translate-y-0; }
+
+        /* Header Styling */
+        header h1 { font-family: 'Poppins', sans-serif; }
+        header p { font-family: 'Inter', sans-serif; }
+
+        /* Spinner for buttons */
+        .spinner {
+            @apply animate-spin inline-block w-5 h-5 border-2 border-current border-t-transparent rounded-full;
+            border-color: currentColor; /* Ensures spinner matches button text color */
+        }
+        /* Global message styling */
+        #globalMessage {
+            @apply fixed top-5 right-5 z-50 max-w-sm;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3), 0 8px 10px -6px rgba(0,0,0,0.2);
+        }
+        /* Subtle background pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-image: radial-gradient(circle at top right, rgba(14, 165, 233, 0.1), transparent 40%),
+                              radial-gradient(circle at bottom left, rgba(56, 189, 248, 0.08), transparent 50%);
+            z-index: -1;
+            pointer-events: none;
+        }
+        /* Specific element styling for better contrast/emphasis */
+        #autoAdjustStatus { @apply text-sm text-sky-200 mb-4 p-3 bg-slate-700/60 rounded-lg border border-slate-600; }
+        #totalAbsDiff { @apply text-md font-semibold text-sky-300 mb-6 text-right; }
+        #marginDisplay { @apply font-semibold text-sky-300; }
+        
+        .match-card, .team-info-card { /* Unified card style for matches and team info */
+            @apply p-5 border border-slate-700 rounded-xl bg-slate-700/40 
+                   hover:bg-slate-700/60 hover:border-slate-500 transition-all duration-200 ease-in-out shadow-lg;
+        }
+        .match-card h4, .team-info-card h5 { @apply font-semibold text-sky-300 mb-3 text-lg; }
+        .team-info-card h5 { @apply text-center; }
+
+
+        /* Final Odds Card Styling */
+        .final-odds-card {
+            @apply bg-slate-700/50 border border-slate-600 rounded-xl p-6 shadow-lg
+                   transition-all duration-300 ease-in-out hover:shadow-sky-500/30 hover:border-sky-500/50;
+        }
+        .final-odds-card .match-title {
+            @apply text-xl font-semibold text-sky-300 mb-1 text-center;
+        }
+         .final-odds-card .match-id {
+            @apply text-xs text-slate-400 mb-4 text-center block;
+        }
+        .final-odds-card .odds-section {
+            @apply mt-4 pt-4 border-t border-slate-600;
+        }
+        .final-odds-card .odds-label {
+            @apply text-sm text-sky-400 font-medium mb-1;
+        }
+        .final-odds-card .odds-value {
+            @apply text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-300 to-cyan-200;
+        }
+         .final-odds-card .fair-probs-text {
+            @apply text-xs text-slate-400 mt-3 text-center;
+        }
+
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto"> 
+        <header class="mb-12 text-center py-8">
+            <h1 class="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-cyan-300 to-emerald-400 leading-tight">
+                Dynamic Odds Modeller
+            </h1>
+            <p class="text-slate-400 mt-4 text-xl max-w-2xl mx-auto">
+                Intelligently simulate and calibrate group stage betting odds with iterative refinement.
+            </p>
+        </header>
+
+        <div id="globalMessage" class="mb-6 p-4 rounded-xl text-white text-center font-medium hidden transition-all duration-300 ease-in-out transform"></div>
+
+        <div id="step1DataInput" class="card">
+            <h2 class="section-title"><span>📊</span> Step 1: Initial Data & Odds</h2>
+            
+            <div class="mb-10 p-6 border border-slate-700 rounded-xl bg-slate-700/30">
+                <h3 class="text-xl font-semibold text-sky-300 mb-3">Load from CSV</h3>
+                <p class="text-sm text-slate-400 mb-2">
+                    Columns: <code class="text-sky-400 font-semibold">Category, Detail, Value1, Value2, Value3, Value4, Value5</code>. Header optional.
+                </p>
+                <ul class="csv-format-details mb-4">
+                    <li><strong>TeamNames:</strong> Cat=<code>TeamNames</code>, Det=<code>Names</code>, Val1-4=<code>Team Names</code></li>
+                    <li><strong>OutrightOdds:</strong> Cat=<code>OutrightWinnerOdds</code>, Det=<code>Odds</code>, Val1-4=<code>Odds (TeamNames order)</code></li>
+                    <li><strong>Match (x2 R1):</strong> Cat=<code>Match</code>, Det=<code>MatchID</code>, Val1=<code>TeamA</code>, Val2=<code>TeamB</code>, Val3=<code>OddsA</code>, Val4=<code>Draw</code>, Val5=<code>OddsB</code></li>
+                </ul>
+                <div class="flex flex-col sm:flex-row items-center gap-3">
+                    <input type="file" id="csvFile" accept=".csv" class="input-field flex-grow file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-sky-500 file:text-white hover:file:bg-sky-400 cursor-pointer">
+                    <button id="loadCsvBtn" class="btn btn-secondary w-full sm:w-auto whitespace-nowrap">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+                        Load CSV
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-xl font-semibold text-sky-300 mb-6">Teams & Outright Odds</h3>
+                <div id="teamInfoContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                    </div>
+            </div>
+
+            <div>
+                <h3 class="text-xl font-semibold text-sky-300 mb-6">Round 1 Match Odds</h3>
+                <div id="r1MatchesContainer" class="space-y-8">
+                    </div>
+            </div>
+            <button id="proceedToH2HBtn" class="btn btn-primary mt-10 w-full text-lg py-3.5">
+                Next: Set H2H Probabilities 
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block ml-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+            </button>
+        </div>
+
+        <div id="step2H2HProbs" class="card hidden">
+            <h2 class="section-title"><span>⚙️</span> Step 2: H2H Fair Probabilities (R2 & R3)</h2>
+            <p class="text-sm text-slate-400 mb-8">Adjust fair probabilities. P(Win B) is auto-calculated. Ensure each row sums to 1.0.</p>
+            <div id="h2hProbsContainer" class="space-y-10"> 
+                </div>
+            <div class="mt-10 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <button id="backToDataInputBtn" class="btn btn-secondary w-full sm:w-auto">
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" /></svg>
+                    Back to Data
+                </button>
+                <button id="runSimulationBtn" class="btn btn-primary w-full sm:w-auto text-lg py-3.5">
+                    Run Manual Simulation
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block ml-2" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z" /><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" /></svg>
+                </button>
+            </div>
+        </div>
+
+        <div id="step3SimResults" class="card hidden">
+            <h2 class="section-title"><span>📈</span> Step 3: Simulation Results</h2>
+            <p id="autoAdjustStatus" class="text-sm text-sky-200 mb-6 p-4 bg-slate-700/60 rounded-xl border border-slate-600"></p>
+            <div class="table-container mb-6">
+                <table id="resultsTable" class="min-w-full">
+                    <thead>
+                        <tr>
+                            <th class="table-th rounded-tl-xl">Team</th>
+                            <th class="table-th">Simulated P(Win Group)</th>
+                            <th class="table-th">Target P(Win Group)</th>
+                            <th class="table-th rounded-tr-xl">Difference</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTableBody" class="bg-slate-800/30">
+                        </tbody>
+                </table>
+            </div>
+            <p id="totalAbsDiff" class="text-lg font-semibold text-sky-300 mb-8 text-right"></p>
+            <div class="mt-10 flex flex-wrap justify-center gap-4">
+                <button id="manualAdjustH2HBtn" class="btn btn-secondary">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                    Manually Adjust H2H
+                </button>
+                <button id="autoAdjustH2HBtn" class="btn btn-success">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 00-15.357-2m15.357 2H15" /></svg>
+                    Auto-Adjust H2H
+                </button>
+                <button id="finalizeOddsBtn" class="btn btn-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                    Finalize & Show Odds
+                </button>
+            </div>
+        </div>
+
+        <div id="step4FinalOdds" class="card hidden">
+            <h2 class="section-title"><span>🏆</span> Step 4: Final Calibrated Odds (R2 & R3)</h2>
+            <div class="flex flex-col sm:flex-row items-center mb-8 p-4 bg-slate-700/30 rounded-xl border border-slate-600 gap-3">
+                <label for="marginInput" class="input-label whitespace-nowrap text-sky-300 text-base">Bookmaker's Margin (%):</label>
+                <input type="number" id="marginInput" value="7" min="0" max="50" step="0.1" class="input-field w-full sm:w-28">
+                <span class="text-sm text-slate-400">(Current: <span id="marginDisplay" class="font-semibold text-sky-300">7.0</span>%)</span>
+            </div>
+            
+            <div id="finalOddsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                </div>
+            <button id="startOverBtn" class="btn btn-secondary mt-10 w-full md:w-auto">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 00-15.357-2m15.357 2H15" /></svg>
+                Start Over
+            </button>
+        </div>
+
+        <footer class="text-center mt-12 mb-6">
+            <p class="text-sm text-slate-500">&copy; 2024 Dynamic Odds Modeller. For simulation purposes only.</p>
+        </footer>
+    </div>
+
+<script>
+    // --- Global State and Configuration ---
+    let appState = {
+        teams: [], 
+        outrightOddsRaw: {}, 
+        r1MatchesData: [], 
+        matchSchedule: [], 
+        h2hFairProbs: {}, 
+        targetOutrightProbsMap: {}, 
+        simulatedOutrightsFreq: {},
+        numSimIterations: 10000, 
+        currentMargin: 0.07,
+        isAutoAdjusting: false
+    };
+
+    // --- DOM Elements ---
+    const teamInfoContainer = document.getElementById('teamInfoContainer'); // Changed from teamNamesContainer
+    // const outrightOddsContainer = document.getElementById('outrightOddsContainer'); // No longer separate
+    const r1MatchesContainer = document.getElementById('r1MatchesContainer');
+    const h2hProbsContainer = document.getElementById('h2hProbsContainer');
+    const resultsTableBody = document.getElementById('resultsTableBody');
+    const totalAbsDiffEl = document.getElementById('totalAbsDiff');
+    const finalOddsContainer = document.getElementById('finalOddsContainer');
+    const globalMessageEl = document.getElementById('globalMessage');
+    const marginDisplayEl = document.getElementById('marginDisplay');
+    const marginInputEl = document.getElementById('marginInput');
+    const autoAdjustStatusEl = document.getElementById('autoAdjustStatus');
+
+
+    // --- UI Navigation Functions ---
+    function showStep(stepId) {
+        ['step1DataInput', 'step2H2HProbs', 'step3SimResults', 'step4FinalOdds'].forEach(id => {
+            document.getElementById(id).classList.add('hidden');
+        });
+        const currentStepEl = document.getElementById(stepId);
+        currentStepEl.classList.remove('hidden');
+        currentStepEl.style.opacity = '0';
+        setTimeout(() => currentStepEl.style.opacity = '1', 50);
+        
+        window.scrollTo({ top: currentStepEl.offsetTop - 20, behavior: 'smooth' }); 
+    }
+
+    function displayGlobalMessage(message, type = 'info', persistent = false) { 
+        globalMessageEl.innerHTML = message; 
+        globalMessageEl.classList.remove('hidden', 'opacity-0', 'bg-sky-600', 'bg-emerald-600', 'bg-red-600');
+        globalMessageEl.classList.add('opacity-100');
+
+        let bgColor = 'bg-sky-600'; 
+        if (type === 'success') bgColor = 'bg-emerald-600';
+        else if (type === 'error') bgColor = 'bg-red-600';
+        globalMessageEl.classList.add(bgColor);
+        
+        if (!persistent) {
+            setTimeout(() => {
+                globalMessageEl.classList.remove('opacity-100');
+                globalMessageEl.classList.add('opacity-0');
+                setTimeout(()=> globalMessageEl.classList.add('hidden'), 300); 
+            }, 5000);
+        }
+    }
+    
+    function setButtonsDisabled(disabled) {
+        document.querySelectorAll('.btn').forEach(button => {
+            if (button.id !== 'startOverBtn') { 
+                 button.disabled = disabled;
+                 if (disabled && button.id === 'autoAdjustH2HBtn' && appState.isAutoAdjusting) {
+                 } else if (disabled) {
+                    button.classList.add('opacity-60', 'cursor-not-allowed');
+                 } else {
+                    button.classList.remove('opacity-60', 'cursor-not-allowed');
+                 }
+            }
+        });
+    }
+
+    // --- Core Logic Functions ---
+    function normalizeProbs(oddsList) {
+        if (!oddsList || oddsList.some(o => o == null || o <= 0)) {
+            console.warn("Invalid or zero odds in normalizeProbs. Using uniform.");
+            return oddsList ? Array(oddsList.length).fill(1 / oddsList.length) : [];
+        }
+        try {
+            const probs = oddsList.map(o => 1 / o);
+            const sumProbs = probs.reduce((a, b) => a + b, 0);
+            if (sumProbs === 0) return Array(oddsList.length).fill(1 / oddsList.length);
+            return probs.map(p => p / sumProbs);
+        } catch (e) {
+            console.error("Error in normalizeProbs:", e);
+            return oddsList ? Array(oddsList.length).fill(1 / oddsList.length) : [];
+        }
+    }
+
+    function getMatchOutcome(probWin1, probDraw, probWin2) {
+        const outcomes = ['1', 'X', '2'];
+        let probabilities = [probWin1, probDraw, probWin2];
+        const totalProb = probabilities.reduce((a, b) => a + b, 0);
+
+        if (Math.abs(totalProb - 1.0) > 1e-5) {
+            if (totalProb > 0) {
+                probabilities = probabilities.map(p => p / totalProb);
+            } else {
+                probabilities = [1/3, 1/3, 1/3];
+            }
+        }
+        const rand = Math.random();
+        if (rand < probabilities[0]) return '1';
+        if (rand < probabilities[0] + probabilities[1]) return 'X';
+        return '2';
+    }
+
+    function calculateOddsFromFairProbs(fairProbs, margin) {
+        if (Math.abs(fairProbs.reduce((a,b) => a+b, 0) - 1.0) > 1e-5) {
+            const s = fairProbs.reduce((a,b) => a+b, 0);
+            if (s > 0) fairProbs = fairProbs.map(p => p/s);
+            else return [999.0, 999.0, 999.0];
+        }
+        
+        return fairProbs.map(pFair => {
+            if (pFair <= 1e-9) return 9999.0;
+            const oddValue = 1.0 / (pFair * (1.0 + margin));
+            return parseFloat(oddValue.toFixed(2));
+        });
+    }
+
+    function normalizePair(teamA, teamB) {
+        return [teamA, teamB].sort();
+    }
+
+    function pairArrayToString(pairArray) { // pairArray is already sorted by normalizePair
+        return pairArray.join('_vs_');
+    }
+
+    function defineMatchScheduleJS(teamsListNames, r1CsvMatches) {
+        if (teamsListNames.length !== 4) {
+            console.error("defineMatchScheduleJS requires exactly 4 team names.");
+            return [];
+        }
+        // Ensure r1CsvMatches is an array and has 2 elements, otherwise use standard schedule.
+        const useStandardSchedule = !r1CsvMatches || !Array.isArray(r1CsvMatches) || r1CsvMatches.length !== 2;
+
+        if (useStandardSchedule) {
+            console.warn("r1CsvMatches not fully provided or invalid for defineMatchScheduleJS, using standard schedule based on team order.");
+            return [
+                { round: 1, id: 'R1M1_std', pair: [teamsListNames[0], teamsListNames[1]] },
+                { round: 1, id: 'R1M2_std', pair: [teamsListNames[2], teamsListNames[3]] },
+                { round: 2, id: 'R2M1_std', pair: [teamsListNames[0], teamsListNames[2]] },
+                { round: 2, id: 'R2M2_std', pair: [teamsListNames[1], teamsListNames[3]] },
+                { round: 3, id: 'R3M1_std', pair: [teamsListNames[0], teamsListNames[3]] },
+                { round: 3, id: 'R3M2_std', pair: [teamsListNames[1], teamsListNames[2]] },
+            ];
+        }
+
+        const schedule = [];
+        
+        // Round 1 from CSV data
+        schedule.push({ round: 1, id: r1CsvMatches[0].id || 'R1M1_csv', pair: [r1CsvMatches[0].team_a, r1CsvMatches[0].team_b] });
+        schedule.push({ round: 1, id: r1CsvMatches[1].id || 'R1M2_csv', pair: [r1CsvMatches[1].team_a, r1CsvMatches[1].team_b] });
+
+        // Generate all possible unique pairings
+        const allPossiblePairs = [];
+        for (let i = 0; i < teamsListNames.length; i++) {
+            for (let j = i + 1; j < teamsListNames.length; j++) {
+                allPossiblePairs.push(normalizePair(teamsListNames[i], teamsListNames[j]));
+            }
+        }
+        
+        const r1PairStrings = r1CsvMatches.map(match => pairArrayToString(normalizePair(match.team_a, match.team_b)));
+
+        // Filter out R1 pairs to find remaining pairs
+        const remainingPairs = allPossiblePairs.filter(p => !r1PairStrings.includes(pairArrayToString(p)));
+
+        if (remainingPairs.length !== 4) {
+            console.error("Error determining remaining pairs. Expected 4, got " + remainingPairs.length, "R1 Pairs:", r1PairStrings, "All Pairs:", allPossiblePairs.map(p=>pairArrayToString(p)));
+            // Fallback to standard R2/R3 if logic fails to prevent app break
+            schedule.push({ round: 2, id: 'R2M1_fallback', pair: [teamsListNames[0], teamsListNames[2]] });
+            schedule.push({ round: 2, id: 'R2M2_fallback', pair: [teamsListNames[1], teamsListNames[3]] });
+            schedule.push({ round: 3, id: 'R3M1_fallback', pair: [teamsListNames[0], teamsListNames[3]] });
+            schedule.push({ round: 3, id: 'R3M2_fallback', pair: [teamsListNames[1], teamsListNames[2]] });
+            return schedule;
+        }
+
+        // Distribute remaining pairs to R2 and R3
+        schedule.push({ round: 2, id: 'R2M1_derived', pair: remainingPairs[0] });
+        schedule.push({ round: 2, id: 'R2M2_derived', pair: remainingPairs[1] });
+        schedule.push({ round: 3, id: 'R3M1_derived', pair: remainingPairs[2] });
+        schedule.push({ round: 3, id: 'R3M2_derived', pair: remainingPairs[3] });
+        
+        return schedule;
+    }
+    
+    function getH2HKey(teamA, teamB) { 
+        return [teamA, teamB].sort().join('_vs_');
+    }
+    
+    function getPairKeyForProbs(teamA, teamB) { 
+        return `${teamA}_vs_${teamB}`;
+    }
+
+
+    function runSimulationJS() {
+        const groupWinnerCounts = {};
+        appState.teams.forEach(t => groupWinnerCounts[t.name] = 0);
+
+        const sortedTeamsByInitialSeeding = Object.keys(appState.targetOutrightProbsMap)
+            .sort((a, b) => appState.targetOutrightProbsMap[b] - appState.targetOutrightProbsMap[a]);
+
+        for (let i = 0; i < appState.numSimIterations; i++) {
+            const points = {};
+            appState.teams.forEach(t => points[t.name] = 0);
+            const h2hResultsThisSim = {}; 
+
+            appState.matchSchedule.forEach(matchInfo => {
+                const teamA = matchInfo.pair[0];
+                const teamB = matchInfo.pair[1];
+                const pairKeyForProbs = getPairKeyForProbs(teamA, teamB);
+                
+                let probs;
+                if (appState.h2hFairProbs[pairKeyForProbs]) {
+                    probs = appState.h2hFairProbs[pairKeyForProbs];
+                } else {
+                    console.error(`Critical: Missing H2H probabilities for scheduled match ${teamA} vs ${teamB}. Using fallback.`);
+                    probs = [1/3, 1/3, 1/3]; 
+                }
+
+                const outcome = getMatchOutcome(probs[0], probs[1], probs[2]);
+                
+                const sortedH2HKey = getH2HKey(teamA, teamB);
+                if (teamA === sortedH2HKey.split('_vs_')[0]) { 
+                    h2hResultsThisSim[sortedH2HKey] = outcome;
+                } else { 
+                    h2hResultsThisSim[sortedH2HKey] = outcome === '1' ? '2' : (outcome === '2' ? '1' : 'X');
+                }
+
+                if (outcome === '1') points[teamA] += 3;
+                else if (outcome === 'X') { points[teamA] += 1; points[teamB] += 1; }
+                else points[teamB] += 3;
+            });
+
+            let maxPoints = -1;
+            Object.values(points).forEach(p => { if (p > maxPoints) maxPoints = p; });
+            
+            const tiedTeamsOverall = appState.teams.map(t => t.name).filter(name => points[name] === maxPoints);
+            let winner = null;
+
+            if (tiedTeamsOverall.length === 1) {
+                winner = tiedTeamsOverall[0];
+            } else if (tiedTeamsOverall.length > 1) {
+                const h2hPointsAmongTied = {};
+                tiedTeamsOverall.forEach(t => h2hPointsAmongTied[t] = 0);
+
+                for (let j = 0; j < tiedTeamsOverall.length; j++) {
+                    for (let k = j + 1; k < tiedTeamsOverall.length; k++) {
+                        const tA_tied = tiedTeamsOverall[j];
+                        const tB_tied = tiedTeamsOverall[k];
+                        const h2hKey_sorted = getH2HKey(tA_tied, tB_tied);
+                        const h2hOutcome_sorted = h2hResultsThisSim[h2hKey_sorted]; 
+
+                        if (h2hOutcome_sorted) {
+                            const firstInSortedKey = h2hKey_sorted.split('_vs_')[0];
+                            if (tA_tied === firstInSortedKey) { 
+                                if (h2hOutcome_sorted === '1') h2hPointsAmongTied[tA_tied] += 3;
+                                else if (h2hOutcome_sorted === 'X') { h2hPointsAmongTied[tA_tied] += 1; h2hPointsAmongTied[tB_tied] += 1; }
+                                else h2hPointsAmongTied[tB_tied] += 3;
+                            } else { 
+                                if (h2hOutcome_sorted === '1') h2hPointsAmongTied[tB_tied] += 3; 
+                                else if (h2hOutcome_sorted === 'X') { h2hPointsAmongTied[tA_tied] += 1; h2hPointsAmongTied[tB_tied] += 1; }
+                                else h2hPointsAmongTied[tA_tied] += 3; 
+                            }
+                        }
+                    }
+                }
+                
+                let maxH2HPoints = -1;
+                if (Object.keys(h2hPointsAmongTied).length > 0) { 
+                    Object.values(h2hPointsAmongTied).forEach(p => { if (p > maxH2HPoints) maxH2HPoints = p; });
+                } else { 
+                    maxH2HPoints = 0; 
+                }
+
+                const stillTiedAfterH2H = tiedTeamsOverall.filter(t => h2hPointsAmongTied[t] === maxH2HPoints);
+
+                if (stillTiedAfterH2H.length === 1) {
+                    winner = stillTiedAfterH2H[0];
+                } else { 
+                    for (const seededTeam of sortedTeamsByInitialSeeding) {
+                        if (stillTiedAfterH2H.includes(seededTeam)) {
+                            winner = seededTeam;
+                            break;
+                        }
+                    }
+                    if (!winner && stillTiedAfterH2H.length > 0) winner = stillTiedAfterH2H[0]; 
+                }
+            } else if (tiedTeamsOverall.length === 0 && appState.teams.length > 0) { 
+                 winner = sortedTeamsByInitialSeeding[0];
+            }
+
+            if (winner) groupWinnerCounts[winner]++;
+        }
+        
+        appState.simulatedOutrightsFreq = {};
+        appState.teams.forEach(t => {
+            appState.simulatedOutrightsFreq[t.name] = (groupWinnerCounts[t.name] || 0) / appState.numSimIterations;
+        });
+    }
+
+    // --- UI Rendering and Update Functions ---
+    function renderTeamInfoCards() { 
+        teamInfoContainer.innerHTML = '';
+        for (let i = 0; i < 4; i++) {
+            const teamName = appState.teams[i] ? appState.teams[i].name : `Team ${i + 1}`;
+            const outrightOdd = (appState.teams[i] && appState.outrightOddsRaw[appState.teams[i].name]) ? appState.outrightOddsRaw[appState.teams[i].name] : "";
+            
+            const cardDiv = document.createElement('div');
+            cardDiv.classList.add('team-info-card'); 
+            cardDiv.innerHTML = `
+                <h5>Team ${i + 1}</h5>
+                <div class="space-y-3">
+                    <div>
+                        <label for="teamName${i}" class="input-label">Name:</label>
+                        <input type="text" id="teamName${i}" value="${teamName}" class="input-field team-name-input" data-index="${i}">
+                    </div>
+                    <div>
+                        <label for="outrightOdd${i}" class="input-label">Outright Odd:</label>
+                        <input type="number" id="outrightOdd${i}" value="${outrightOdd}" class="input-field outright-odd-input" data-index="${i}" step="0.01" min="1.01">
+                    </div>
+                </div>
+            `;
+            teamInfoContainer.appendChild(cardDiv);
+        }
+        
+        document.querySelectorAll('.team-name-input').forEach(input => {
+            input.addEventListener('input', handleTeamInfoChange);
+        });
+        document.querySelectorAll('.outright-odd-input').forEach(input => {
+            input.addEventListener('input', handleTeamInfoChange);
+        });
+    }
+    
+    function handleTeamInfoChange() { 
+        const teamNameInputs = document.querySelectorAll('.team-name-input');
+        const outrightOddInputs = document.querySelectorAll('.outright-odd-input');
+        
+        const newTeams = [];
+        const newOutrightOddsRaw = {};
+
+        teamNameInputs.forEach((nameInput, i) => {
+            const name = nameInput.value.trim() || `Team ${i + 1}`;
+            newTeams.push({ name });
+            
+            const oddInput = outrightOddInputs[i];
+            const odd = parseFloat(oddInput.value);
+            if (!isNaN(odd) && odd > 1.0) {
+                newOutrightOddsRaw[name] = odd;
+            } else {
+                newOutrightOddsRaw[name] = ""; 
+            }
+        });
+        
+        appState.teams = newTeams;
+        appState.outrightOddsRaw = newOutrightOddsRaw;
+        
+        renderR1MatchInputs(); 
+    }
+
+
+    function renderR1MatchInputs() {
+        r1MatchesContainer.innerHTML = '';
+        if (!appState.teams || appState.teams.length !== 4) {
+             r1MatchesContainer.innerHTML = '<p class="text-sm text-slate-400">Enter 4 team names first.</p>';
+            return;
+        }
+
+        let matchesToRender = [];
+        if (appState.r1MatchesData && appState.r1MatchesData.length === 2) {
+            matchesToRender = appState.r1MatchesData.map((match, index) => ({
+                displayIdSuffix: `csv_${index}`, 
+                matchIdFromData: match.id, 
+                team_a_render: match.team_a,
+                team_b_render: match.team_b,
+                odds_render: match.odds 
+            }));
+        } else {
+            matchesToRender = [
+                { displayIdSuffix: 'default_0', matchIdFromData: 'R1M1_ui_default', team_a_render: appState.teams[0].name, team_b_render: appState.teams[1].name, odds_render: ["", "", ""] },
+                { displayIdSuffix: 'default_1', matchIdFromData: 'R1M2_ui_default', team_a_render: appState.teams[2].name, team_b_render: appState.teams[3].name, odds_render: ["", "", ""] }
+            ];
+        }
+
+        matchesToRender.forEach((matchSpec, index) => {
+            const div = document.createElement('div');
+            div.classList.add('match-card');
+            const domIndex = index; 
+
+            div.innerHTML = `
+                <h4>Round 1 Match ${index + 1}: ${matchSpec.team_a_render} vs ${matchSpec.team_b_render}</h4>
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label for="r1m${domIndex}_o1" class="input-label">${matchSpec.team_a_render} Win:</label>
+                        <input type="number" id="r1m${domIndex}_o1" value="${matchSpec.odds_render[0]}" class="input-field r1-match-odd" data-match-id="${matchSpec.matchIdFromData}" data-team-a="${matchSpec.team_a_render}" data-team-b="${matchSpec.team_b_render}" data-odd-index="0" step="0.01" min="1.01">
+                    </div>
+                    <div>
+                        <label for="r1m${domIndex}_oX" class="input-label">Draw:</label>
+                        <input type="number" id="r1m${domIndex}_oX" value="${matchSpec.odds_render[1]}" class="input-field r1-match-odd" data-match-id="${matchSpec.matchIdFromData}" data-team-a="${matchSpec.team_a_render}" data-team-b="${matchSpec.team_b_render}" data-odd-index="1" step="0.01" min="1.01">
+                    </div>
+                    <div>
+                        <label for="r1m${domIndex}_o2" class="input-label">${matchSpec.team_b_render} Win:</label>
+                        <input type="number" id="r1m${domIndex}_o2" value="${matchSpec.odds_render[2]}" class="input-field r1-match-odd" data-match-id="${matchSpec.matchIdFromData}" data-team-a="${matchSpec.team_a_render}" data-team-b="${matchSpec.team_b_render}" data-odd-index="2" step="0.01" min="1.01">
+                    </div>
+                </div>
+            `;
+            r1MatchesContainer.appendChild(div);
+        });
+    }
+    
+    function renderH2HProbsInputs() {
+        h2hProbsContainer.innerHTML = '';
+        if (!appState.matchSchedule || appState.matchSchedule.length === 0) {
+            console.warn("Match schedule not defined for H2H probs input rendering.");
+            h2hProbsContainer.innerHTML = '<p class="text-sm text-slate-400">Complete Step 1 to define schedule.</p>';
+            return;
+        }
+        appState.matchSchedule.forEach(matchInfo => {
+            if (matchInfo.round > 1) { 
+                const teamA = matchInfo.pair[0];
+                const teamB = matchInfo.pair[1];
+                const key = getPairKeyForProbs(teamA, teamB); 
+                const currentProbs = appState.h2hFairProbs[key] || [0.333, 0.334, 0.333]; 
+
+                const div = document.createElement('div');
+                div.classList.add('match-card');
+                div.innerHTML = `
+                    <h4>${matchInfo.id}: ${teamA} vs ${teamB}</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div>
+                            <label for="h2h_${key}_pA" class="input-label">P(${teamA} Win):</label>
+                            <input type="number" id="h2h_${key}_pA" value="${currentProbs[0].toFixed(3)}" class="input-field h2h-prob-input" data-key="${key}" data-index="0" step="0.001" min="0" max="1">
+                        </div>
+                        <div>
+                            <label for="h2h_${key}_pD" class="input-label">P(Draw):</label>
+                            <input type="number" id="h2h_${key}_pD" value="${currentProbs[1].toFixed(3)}" class="input-field h2h-prob-input" data-key="${key}" data-index="1" step="0.001" min="0" max="1">
+                        </div>
+                        <div>
+                            <label class="input-label">P(${teamB} Win):</label>
+                            <input type="text" id="h2h_${key}_pB" value="${currentProbs[2].toFixed(3)}" class="input-field bg-slate-600/50 cursor-not-allowed text-slate-300" data-pb-key="${key}" readonly>
+                        </div>
+                    </div>
+                `;
+                h2hProbsContainer.appendChild(div);
+                
+                const pA_input = div.querySelector(`input[data-key="${key}"][data-index="0"]`);
+                const pD_input = div.querySelector(`input[data-key="${key}"][data-index="1"]`);
+                const pB_display = div.querySelector(`input[data-pb-key="${key}"]`);
+
+
+                function updateH2HProbForPair() {
+                    if(!pA_input || !pD_input || !pB_display) return; 
+                    
+                    const pA = parseFloat(pA_input.value) || 0;
+                    const pD = parseFloat(pD_input.value) || 0;
+                    if (pA < 0 || pD < 0 || pA > 1 || pD > 1 || (pA + pD) > 1.0001) { 
+                        pB_display.value = "Error!";
+                        pB_display.classList.add('text-red-400', 'font-semibold');
+                        return;
+                    }
+                    pB_display.classList.remove('text-red-400', 'font-semibold');
+                    const pB = Math.max(0, 1.0 - pA - pD);
+                    pB_display.value = pB.toFixed(3);
+                    
+                    const normalizedProbs = [pA, pD, pB];
+                    const sumNorm = normalizedProbs.reduce((s, v) => s + v, 0);
+                    if (sumNorm > 0 && Math.abs(sumNorm - 1.0) > 1e-5) { 
+                        appState.h2hFairProbs[key] = normalizedProbs.map(p_val => p_val / sumNorm);
+                        pA_input.value = appState.h2hFairProbs[key][0].toFixed(3);
+                        pD_input.value = appState.h2hFairProbs[key][1].toFixed(3);
+                        pB_display.value = appState.h2hFairProbs[key][2].toFixed(3);
+                    } else {
+                         appState.h2hFairProbs[key] = normalizedProbs;
+                    }
+                }
+                if (pA_input && pD_input) { 
+                    [pA_input, pD_input].forEach(inputEl => {
+                        inputEl.addEventListener('input', updateH2HProbForPair);
+                    });
+                }
+            }
+        });
+    }
+
+    function renderSimulationResults() {
+        resultsTableBody.innerHTML = '';
+        let totalDiff = 0;
+        if (!appState.teams || appState.teams.length === 0) {
+             resultsTableBody.innerHTML = '<tr><td colspan="4" class="table-td text-center text-slate-400 py-8">No data to display. Complete previous steps.</td></tr>';
+            totalAbsDiffEl.textContent = `Total Absolute Difference: N/A`;
+            return;
+        }
+        appState.teams.forEach(team => {
+            const simP = appState.simulatedOutrightsFreq[team.name] || 0.0;
+            const tarP = appState.targetOutrightProbsMap[team.name] || 0.0;
+            const diff = simP - tarP;
+            totalDiff += Math.abs(diff);
+
+            const row = resultsTableBody.insertRow();
+            row.classList.add('hover:bg-slate-700/30', 'transition-colors');
+            row.innerHTML = `
+                <td class="table-td font-medium text-sky-300">${team.name}</td>
+                <td class="table-td">${simP.toFixed(4)}</td>
+                <td class="table-td">${tarP.toFixed(4)}</td>
+                <td class="table-td ${diff >= 0 ? 'text-emerald-400' : 'text-red-400'} font-semibold">${diff.toFixed(4)}</td>
+            `;
+        });
+        totalAbsDiffEl.innerHTML = `Total Absolute Difference: <span class="text-xl ${totalDiff > 0.05 ? 'text-red-400' : 'text-emerald-400'}">${totalDiff.toFixed(4)}</span>`;
+    }
+
+    function renderFinalOdds() {
+        finalOddsContainer.innerHTML = ''; 
+        marginDisplayEl.textContent = (appState.currentMargin * 100).toFixed(1);
+        marginInputEl.value = (appState.currentMargin * 100).toFixed(1);
+
+        if (!appState.matchSchedule || appState.matchSchedule.length === 0) {
+            finalOddsContainer.innerHTML = '<p class="text-sm text-slate-400">No schedule defined. Complete previous steps.</p>';
+            return;
+        }
+
+        let oddsDisplayed = 0;
+        appState.matchSchedule.forEach(matchInfo => {
+            if (matchInfo.round > 1) { 
+                const teamA = matchInfo.pair[0];
+                const teamB = matchInfo.pair[1];
+                const key = getPairKeyForProbs(teamA, teamB);
+                const fairProbs = appState.h2hFairProbs[key];
+
+                if (!fairProbs || fairProbs.length !== 3) {
+                    console.error("Missing or invalid fairProbs for final odds calculation:", key);
+                    const errorDiv = document.createElement('div');
+                    errorDiv.classList.add('final-odds-card', 'border-red-500', 'bg-red-900/30');
+                    errorDiv.innerHTML = `<p class="text-red-300 text-center">Error: Missing H2H data for ${teamA} vs ${teamB}</p>`;
+                    finalOddsContainer.appendChild(errorDiv);
+                    return;
+                }
+
+                const finalOdds = calculateOddsFromFairProbs([...fairProbs], appState.currentMargin);
+                
+                const div = document.createElement('div');
+                div.classList.add('final-odds-card');
+                div.innerHTML = `
+                    <p class="match-id">${matchInfo.id}</p>
+                    <h3 class="match-title">${teamA} <span class="text-slate-400 mx-1">vs</span> ${teamB}</h3>
+                    <div class="odds-section grid grid-cols-3 gap-4 text-center">
+                        <div>
+                            <p class="odds-label">${teamA} Win</p>
+                            <p class="odds-value">${finalOdds[0]}</p>
+                        </div>
+                        <div>
+                            <p class="odds-label">Draw</p>
+                            <p class="odds-value">${finalOdds[1]}</p>
+                        </div>
+                        <div>
+                            <p class="odds-label">${teamB} Win</p>
+                            <p class="odds-value">${finalOdds[2]}</p>
+                        </div>
+                    </div>
+                    <p class="fair-probs-text">Based on Fair Probs: [${fairProbs.map(p => p.toFixed(3)).join(', ')}]</p>
+                `;
+                finalOddsContainer.appendChild(div);
+                oddsDisplayed++;
+            }
+        });
+        if (oddsDisplayed === 0 && appState.matchSchedule.length > 0) {
+             finalOddsContainer.innerHTML = '<p class="text-sm text-slate-400 text-center col-span-full">No Round 2 or 3 matches to display odds for. Check schedule generation.</p>';
+        }
+    }
+
+
+    // --- Event Handlers and Data Processing ---
+    function collectAndValidateStep1Data() {
+        appState.teams = [];
+        appState.outrightOddsRaw = {};
+        const teamInfoCards = document.querySelectorAll('.team-info-card');
+        let allTeamDataValid = true;
+
+        teamInfoCards.forEach((card, i) => {
+            const nameInput = card.querySelector('.team-name-input');
+            const oddInput = card.querySelector('.outright-odd-input');
+            const name = nameInput.value.trim();
+            const odd = parseFloat(oddInput.value);
+
+            if (!name) {
+                displayGlobalMessage(`Team ${i+1} name in card cannot be empty.`, 'error');
+                allTeamDataValid = false;
+            }
+            appState.teams.push({ name });
+
+            if (isNaN(odd) || odd <= 1.0) {
+                displayGlobalMessage(`Invalid outright odd for ${name || `Team ${i+1}`}. Must be > 1.0.`, 'error');
+                allTeamDataValid = false;
+            }
+            if (name) { // Only store odd if name is valid
+                 appState.outrightOddsRaw[name] = odd;
+            }
+        });
+        if (!allTeamDataValid) return false;
+        
+        const outrightOddsListForNorm = appState.teams.map(t => appState.outrightOddsRaw[t.name]);
+        if (outrightOddsListForNorm.some(o => o === undefined || o === null || isNaN(o))) {
+            displayGlobalMessage(`Not all outright odds are defined or valid. Please check inputs in team cards.`, 'error');
+            return false;
+        }
+        const normalizedTargetProbsList = normalizeProbs(outrightOddsListForNorm);
+        appState.targetOutrightProbsMap = {};
+        appState.teams.forEach((t, i) => {
+            appState.targetOutrightProbsMap[t.name] = normalizedTargetProbsList[i];
+        });
+
+        // Collect R1 matches from DOM 
+        const collectedR1Matches = [];
+        const r1MatchElements = r1MatchesContainer.querySelectorAll('.match-card'); 
+        let allR1OddsValid = true;
+
+        r1MatchElements.forEach(matchElement => {
+            const teamA_name = matchElement.querySelector('input[data-odd-index="0"]').dataset.teamA;
+            const teamB_name = matchElement.querySelector('input[data-odd-index="0"]').dataset.teamB;
+            const matchId = matchElement.querySelector('input[data-odd-index="0"]').dataset.matchId;
+            
+            const oddsValues = [
+                parseFloat(matchElement.querySelector('input[data-odd-index="0"]').value),
+                parseFloat(matchElement.querySelector('input[data-odd-index="1"]').value),
+                parseFloat(matchElement.querySelector('input[data-odd-index="2"]').value)
+            ];
+
+            if (oddsValues.some(isNaN) || oddsValues.some(o => o <= 1.0)) {
+                displayGlobalMessage(`Invalid odds for R1 match ${teamA_name} vs ${teamB_name}. All odds must be > 1.0.`, 'error');
+                allR1OddsValid = false;
+            } else {
+                 collectedR1Matches.push({
+                    id: matchId, 
+                    team_a: teamA_name, 
+                    team_b: teamB_name, 
+                    odds: oddsValues,
+                    norm_probs: normalizeProbs(oddsValues)
+                });
+            }
+        });
+       
+        if (!allR1OddsValid) return false;
+        if (Object.keys(appState.outrightOddsRaw).length > 0 && collectedR1Matches.length !== 2 ) { 
+            displayGlobalMessage(`Please ensure data for exactly 2 Round 1 matches is provided and valid. Found ${collectedR1Matches.length}.`, 'error');
+            return false;
+        }
+        appState.r1MatchesData = collectedR1Matches; 
+        
+        appState.matchSchedule = defineMatchScheduleJS(appState.teams.map(t => t.name), appState.r1MatchesData);
+        if (appState.matchSchedule.length !== 6 && appState.teams.length === 4 && appState.r1MatchesData.length === 2) {
+            displayGlobalMessage(`Failed to define full match schedule. Expected 6 matches, got ${appState.matchSchedule.length}. Check team names and R1 data.`, 'error');
+            return false;
+        }
+        
+        const newH2hFairProbs = {};
+        appState.r1MatchesData.forEach(r1Match => {
+            const key = getPairKeyForProbs(r1Match.team_a, r1Match.team_b); 
+            newH2hFairProbs[key] = r1Match.norm_probs; 
+        });
+
+        appState.matchSchedule.forEach(matchInfo => {
+            if (matchInfo.round > 1) {
+                const teamA = matchInfo.pair[0];
+                const teamB = matchInfo.pair[1];
+                const key = getPairKeyForProbs(teamA, teamB); 
+                
+                if (appState.h2hFairProbs[key] && appState.h2hFairProbs[key].length === 3) { 
+                    newH2hFairProbs[key] = appState.h2hFairProbs[key];
+                } else if (!newH2hFairProbs[key]) { 
+                    const probAOutright = appState.targetOutrightProbsMap[teamA] || 0.25;
+                    const probBOutright = appState.targetOutrightProbsMap[teamB] || 0.25;
+                    
+                    const strengthDiff = Math.abs(probAOutright - probBOutright); 
+                    const maxDrawProb = 0.34; 
+                    const minDrawProb = 0.22; 
+                    
+                    let sugg_draw = maxDrawProb - (strengthDiff * (maxDrawProb - minDrawProb));
+                    sugg_draw = Math.max(minDrawProb, Math.min(maxDrawProb, sugg_draw)); 
+
+                    const remainingProbForWins = 1.0 - sugg_draw;
+                    
+                    let sugg_win_a, sugg_win_b;
+                    const sumOutrightProbs = probAOutright + probBOutright;
+
+                    if (sumOutrightProbs < 1e-6) { 
+                        sugg_win_a = remainingProbForWins / 2;
+                        sugg_win_b = remainingProbForWins / 2;
+                    } else {
+                        sugg_win_a = (probAOutright / sumOutrightProbs) * remainingProbForWins;
+                        sugg_win_b = (probBOutright / sumOutrightProbs) * remainingProbForWins;
+                    }
+                    
+                    const tempProbs = [sugg_win_a, sugg_draw, sugg_win_b];
+                    const sumTempProbs = tempProbs.reduce((s, p) => s + p, 0);
+                    if (sumTempProbs > 0) {
+                        newH2hFairProbs[key] = tempProbs.map(p => Math.max(0, p / sumTempProbs)); 
+                    } else { 
+                        newH2hFairProbs[key] = [0.333, 0.334, 0.333];
+                    }
+                    const finalSumCheck = newH2hFairProbs[key].reduce((s,p)=>s+p,0);
+                    if (finalSumCheck > 0 && Math.abs(finalSumCheck - 1.0) > 1e-5) {
+                        newH2hFairProbs[key] = newH2hFairProbs[key].map(p => p / finalSumCheck);
+                    }
+                }
+            }
+        });
+        appState.h2hFairProbs = newH2hFairProbs; 
+        return true;
+    }
+    
+    function collectAndValidateH2HProbs() {
+        let allH2HValid = true;
+        if (!appState.matchSchedule) {
+            displayGlobalMessage('Match schedule is not defined. Cannot validate H2H probabilities.', 'error');
+            return false;
+        }
+        appState.matchSchedule.forEach(matchInfo => {
+            if (matchInfo.round > 1) { 
+                const key = getPairKeyForProbs(matchInfo.pair[0], matchInfo.pair[1]);
+                const probs = appState.h2hFairProbs[key];
+                if (!probs || probs.length !== 3 || probs.some(isNaN) || probs.some(p => p < -1e-5 || p > 1.00001) || Math.abs(probs.reduce((s, p) => s + p, 0) - 1.0) > 1e-4) {
+                    displayGlobalMessage(`Invalid H2H probabilities for match ${key.replace('_vs_', ' vs ')}. Ensure values are 0-1 and sum to 1. Current: [${probs ? probs.map(p=>p.toFixed(3)).join(',') : 'undefined'}] Sum: ${probs ? probs.reduce((s,p)=>s+p,0).toFixed(3) : 'N/A'}`, 'error');
+                    allH2HValid = false;
+                }
+            }
+        });
+        return allH2HValid;
+    }
+
+    function handleLoadCsv() {
+        const fileInput = document.getElementById('csvFile');
+        const file = fileInput.files[0];
+        if (!file) {
+            displayGlobalMessage('Please select a CSV file.', 'error');
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            try {
+                const csvData = event.target.result;
+                const rows = csvData.split('\n').map(row => row.trim()).filter(row => row); 
+                
+                const tempCsvData = { teams: [], outrightOdds: {}, r1Matches: [] };
+                let expectedTeamOrderForOutrights = [];
+
+                rows.forEach((rowStr, rowIndex) => {
+                    if (rowIndex === 0 && rowStr.toLowerCase().startsWith('category,detail,value1')) return; 
+
+                    const columns = rowStr.split(',').map(col => col.trim());
+                    if (columns.length < 1 || !columns[0]) return; 
+                    const category = columns[0];
+
+                    if (category === "TeamNames") {
+                        tempCsvData.teams = columns.slice(2, 6).filter(name => name).map(name => ({ name }));
+                        if (tempCsvData.teams.length !== 4) throw new Error("CSV: TeamNames row must define exactly 4 teams in Value1-4.");
+                        expectedTeamOrderForOutrights = tempCsvData.teams.map(t => t.name);
+                    } else if (category === "OutrightWinnerOdds") {
+                        if (expectedTeamOrderForOutrights.length === 0) throw new Error("CSV: TeamNames must be defined before OutrightWinnerOdds.");
+                        const oddsValues = columns.slice(2, 6).filter(val => val).map(val => parseFloat(val));
+                        if (oddsValues.some(isNaN) || oddsValues.some(o => o <=1)) throw new Error("CSV: Invalid outright odds. Must be numbers > 1.");
+                        if (oddsValues.length !== expectedTeamOrderForOutrights.length) throw new Error("CSV: Mismatch in number of outright odds and teams.");
+                        expectedTeamOrderForOutrights.forEach((teamName, i) => {
+                            tempCsvData.outrightOdds[teamName] = oddsValues[i];
+                        });
+                    } else if (category === "Match") {
+                        if (columns.length < 7) throw new Error("CSV: Match row has insufficient columns. Expected 7.");
+                        const matchId = columns[1];
+                        const teamA = columns[2];
+                        const teamB = columns[3];
+                        const odds = columns.slice(4, 7).map(val => parseFloat(val));
+                        if (odds.some(isNaN) || odds.some(o => o <=1)) throw new Error(`CSV: Invalid match odds for ${matchId}. Must be numbers > 1.`);
+                        
+                        if (tempCsvData.teams.length > 0 && 
+                            (!tempCsvData.teams.find(t => t.name === teamA) || !tempCsvData.teams.find(t => t.name === teamB))) {
+                            throw new Error(`CSV: Unknown team in match ${matchId} ("${teamA}" or "${teamB}"). Ensure teams are exactly as in TeamNames row.`);
+                        }
+                        
+                        tempCsvData.r1Matches.push({
+                            id: matchId, team_a: teamA, team_b: teamB, odds: odds
+                        });
+                    }
+                });
+
+                if (tempCsvData.teams.length !== 4) throw new Error("CSV must define 4 teams via a 'TeamNames' row.");
+                if (Object.keys(tempCsvData.outrightOdds).length !== 4) throw new Error("CSV must define outright odds for all 4 teams via an 'OutrightWinnerOdds' row.");
+                if (tempCsvData.r1Matches.length !== 2) throw new Error("CSV must define exactly 2 Round 1 matches via 'Match' rows.");
+
+                appState.teams = tempCsvData.teams;
+                appState.outrightOddsRaw = tempCsvData.outrightOdds;
+                appState.r1MatchesData = tempCsvData.r1Matches.map(m => ({...m, norm_probs: normalizeProbs(m.odds)}));
+                
+                appState.h2hFairProbs = {}; 
+                appState.r1MatchesData.forEach(r1Match => {
+                    const key = getPairKeyForProbs(r1Match.team_a, r1Match.team_b);
+                    appState.h2hFairProbs[key] = r1Match.norm_probs;
+                });
+
+                renderTeamInfoCards(); // Use the new function
+                renderR1MatchInputs(); 
+                displayGlobalMessage('CSV data loaded successfully! Please verify and proceed.', 'success');
+
+            } catch (e) {
+                displayGlobalMessage(`Error parsing CSV: ${e.message}`, 'error');
+                console.error(e);
+                appState.teams = []; appState.outrightOddsRaw = {}; appState.r1MatchesData = [];
+                renderTeamInfoCards(); 
+                renderR1MatchInputs();
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    async function autoAdjustLoop() {
+        if (appState.isAutoAdjusting) {
+            displayGlobalMessage('Auto-adjustment is already in progress.', 'info');
+            return;
+        }
+        appState.isAutoAdjusting = true;
+        setButtonsDisabled(true);
+        const autoAdjustBtn = document.getElementById('autoAdjustH2HBtn');
+        autoAdjustBtn.innerHTML = `<span class="spinner mr-2"></span> Adjusting...`;
+
+
+        const maxAutoIterations = parseInt(prompt("Enter max auto-iterations (e.g., 30-50):", "40")) || 40;
+        const targetTAD = parseFloat(prompt("Enter target Total Absolute Difference (e.g., 0.005-0.01):", "0.008")) || 0.008;
+        let learningRate = parseFloat(prompt("Enter initial learning rate (e.g., 0.03-0.07):", "0.04")) || 0.04;
+        const minLearningRate = 0.0005;
+        const learningRateDecayFactor = 0.96; 
+        const decayPatience = Math.max(3, Math.floor(maxAutoIterations / 8)); 
+        let iterationsWithoutImprovement = 0;
+        let bestTAD = Infinity;
+
+
+        displayGlobalMessage('Starting auto-adjustment...', 'info', true);
+        autoAdjustStatusEl.innerHTML = 'Initializing auto-adjustment... <span class="font-mono text-xs text-slate-400">(Max Iter: '+maxAutoIterations+', Target TAD: '+targetTAD.toFixed(4)+')</span>';
+
+        for (let currentIteration = 0; currentIteration < maxAutoIterations; currentIteration++) {
+            autoAdjustStatusEl.innerHTML = `Running simulation for iteration ${currentIteration + 1}... <span class="font-mono text-xs text-slate-400">(Max Iter: ${maxAutoIterations}, Target TAD: ${targetTAD.toFixed(4)})</span>`;
+            await new Promise(resolve => setTimeout(resolve, 20)); 
+
+            runSimulationJS(); 
+            
+            let currentTAD = 0;
+            appState.teams.forEach(team => {
+                currentTAD += Math.abs(
+                    (appState.simulatedOutrightsFreq[team.name] || 0.0) - 
+                    (appState.targetOutrightProbsMap[team.name] || 0.0)
+                );
+            });
+            
+            renderSimulationResults(); 
+            totalAbsDiffEl.innerHTML = `Total Absolute Difference: <span class="text-xl ${currentTAD > 0.05 ? 'text-red-400' : 'text-emerald-400'}">${currentTAD.toFixed(4)}</span>`; 
+            autoAdjustStatusEl.innerHTML = `Iteration ${currentIteration + 1}/${maxAutoIterations}, TAD: <strong class="text-sky-400">${currentTAD.toFixed(4)}</strong>, LR: ${learningRate.toFixed(4)}`;
+
+            if (currentTAD < targetTAD) {
+                displayGlobalMessage(`🎉 Auto-adjustment complete! Target TAD reached. (TAD: ${currentTAD.toFixed(4)})`, 'success');
+                break;
+            }
+
+            if (currentTAD < bestTAD - 1e-5) { 
+                bestTAD = currentTAD;
+                iterationsWithoutImprovement = 0;
+            } else {
+                iterationsWithoutImprovement++;
+            }
+
+            if (iterationsWithoutImprovement >= decayPatience) {
+                learningRate = Math.max(minLearningRate, learningRate * learningRateDecayFactor);
+                iterationsWithoutImprovement = 0; 
+                autoAdjustStatusEl.innerHTML += ` <span class="text-orange-400">(LR decayed to ${learningRate.toFixed(4)})</span>`;
+                 if (learningRate <= minLearningRate + 1e-5 && currentTAD > targetTAD * 1.5) { 
+                    displayGlobalMessage(`Auto-adjustment might be stuck or oscillating. TAD: ${currentTAD.toFixed(4)}. Consider stopping or changing parameters.`, 'info');
+                }
+            }
+
+            appState.matchSchedule.forEach(matchInfo => {
+                if (matchInfo.round > 1) { 
+                    const teamA = matchInfo.pair[0];
+                    const teamB = matchInfo.pair[1];
+                    const key = getPairKeyForProbs(teamA, teamB);
+
+                    const [P_A_current, P_D_current, P_B_current] = appState.h2hFairProbs[key];
+
+                    const err_A = (appState.simulatedOutrightsFreq[teamA] || 0) - (appState.targetOutrightProbsMap[teamA] || 0);
+                    const err_B = (appState.simulatedOutrightsFreq[teamB] || 0) - (appState.targetOutrightProbsMap[teamB] || 0);
+                    
+                    let delta_P_A = -err_A * learningRate;
+                    let delta_P_B = -err_B * learningRate;
+                    
+                    let new_P_A = P_A_current + delta_P_A;
+                    let new_P_B = P_B_current + delta_P_B;
+
+                    new_P_A = Math.max(0.01, Math.min(0.98, new_P_A));
+                    new_P_B = Math.max(0.01, Math.min(0.98, new_P_B));
+                    
+                    if (new_P_A + new_P_B > 0.98) {
+                        const sum_wins = new_P_A + new_P_B;
+                        new_P_A = (new_P_A / sum_wins) * 0.98;
+                        new_P_B = (new_P_B / sum_wins) * 0.98;
+                    }
+
+                    let new_P_D = 1.0 - new_P_A - new_P_B;
+                    new_P_D = Math.max(0.01, new_P_D); 
+
+                    const finalProbs = [new_P_A, new_P_D, new_P_B];
+                    const sumFinalProbs = finalProbs.reduce((s, p) => s + p, 0);
+                    if (sumFinalProbs > 0) {
+                        appState.h2hFairProbs[key] = finalProbs.map(p => p / sumFinalProbs);
+                    }
+                }
+            });
+            if (currentIteration === maxAutoIterations - 1) {
+                 displayGlobalMessage('Auto-adjustment reached max iterations.', 'info');
+            }
+        }
+        
+        renderH2HProbsInputs(); 
+        renderSimulationResults(); 
+        showStep('step3SimResults'); 
+        autoAdjustStatusEl.innerHTML += ` Auto-adjustment finished. Final TAD: <strong class="text-sky-400">${totalAbsDiffEl.textContent.split(': ')[1] || 'N/A'}</strong>`;
+        appState.isAutoAdjusting = false;
+        setButtonsDisabled(false);
+        autoAdjustBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 00-15.357-2m15.357 2H15" /></svg> Auto-Adjust H2H`;
+    }
+
+
+    // --- Initial Setup and Event Listeners ---
+    function initializeApp() {
+        renderTeamInfoCards(); // Changed from renderTeamNameInputs and renderOutrightOddsInputs
+        renderR1MatchInputs(); 
+        showStep('step1DataInput');
+        autoAdjustStatusEl.textContent = 'Enter data and run simulation to see results.';
+
+
+        document.getElementById('loadCsvBtn').addEventListener('click', handleLoadCsv);
+
+        document.getElementById('proceedToH2HBtn').addEventListener('click', () => {
+            if (collectAndValidateStep1Data()) {
+                renderH2HProbsInputs();
+                showStep('step2H2HProbs');
+            }
+        });
+        
+        document.getElementById('backToDataInputBtn').addEventListener('click', () => {
+            renderTeamInfoCards(); 
+            renderR1MatchInputs(); 
+            showStep('step1DataInput');
+        });
+
+        document.getElementById('runSimulationBtn').addEventListener('click', () => {
+            if (collectAndValidateH2HProbs()) { 
+                displayGlobalMessage('Running simulation...', 'info');
+                setButtonsDisabled(true);
+                setTimeout(() => { 
+                    runSimulationJS();
+                    renderSimulationResults();
+                    showStep('step3SimResults');
+                    displayGlobalMessage('Simulation complete!', 'success');
+                    autoAdjustStatusEl.textContent = 'Manual simulation run. Review results or adjust H2H.'; 
+                    setButtonsDisabled(false);
+                }, 50);
+            }
+        });
+        
+        document.getElementById('autoAdjustH2HBtn').addEventListener('click', () => {
+            if (appState.isAutoAdjusting) return;
+            if (collectAndValidateH2HProbs()){ 
+                 autoAdjustLoop(); 
+            }
+        });
+
+        document.getElementById('manualAdjustH2HBtn').addEventListener('click', () => {
+            renderH2HProbsInputs(); 
+            showStep('step2H2HProbs');
+            autoAdjustStatusEl.textContent = 'Manually adjust H2H probabilities below.'; 
+        });
+
+        document.getElementById('finalizeOddsBtn').addEventListener('click', () => {
+            renderFinalOdds();
+            showStep('step4FinalOdds');
+            autoAdjustStatusEl.textContent = ''; 
+        });
+        
+        marginInputEl.addEventListener('change', () => {
+            const newMarginPercent = parseFloat(marginInputEl.value);
+            if (!isNaN(newMarginPercent) && newMarginPercent >= 0 && newMarginPercent <= 50) {
+                appState.currentMargin = newMarginPercent / 100;
+                marginDisplayEl.textContent = (appState.currentMargin * 100).toFixed(1);
+                if(document.getElementById('step4FinalOdds').classList.contains('hidden') === false){
+                    renderFinalOdds(); 
+                }
+            } else {
+                displayGlobalMessage('Invalid margin. Must be between 0 and 50%.', 'error');
+                marginInputEl.value = (appState.currentMargin * 100).toFixed(1); 
+            }
+        });
+
+        document.getElementById('startOverBtn').addEventListener('click', () => {
+            if (appState.isAutoAdjusting) {
+                displayGlobalMessage('Cannot start over during auto-adjustment. Please wait or refresh.', 'error');
+                return;
+            }
+            appState = {
+                teams: [], 
+                outrightOddsRaw: {}, 
+                r1MatchesData: [], 
+                matchSchedule: [], 
+                h2hFairProbs: {}, 
+                targetOutrightProbsMap: {}, 
+                simulatedOutrightsFreq: {},
+                numSimIterations: 10000,
+                currentMargin: 0.07,
+                isAutoAdjusting: false
+            };
+            renderTeamInfoCards();
+            renderR1MatchInputs(); 
+            h2hProbsContainer.innerHTML = '';
+            resultsTableBody.innerHTML = '<tr><td colspan="4" class="table-td text-center text-slate-400 py-8">No data yet.</td></tr>';
+            finalOddsContainer.innerHTML = '';
+            totalAbsDiffEl.textContent = 'Total Absolute Difference: N/A';
+            autoAdjustStatusEl.textContent = 'Enter data and run simulation to see results.';
+            document.getElementById('csvFile').value = ''; 
+            showStep('step1DataInput');
+            displayGlobalMessage('Form reset. Please start over.', 'info');
+        });
+
+        // No longer need separate listener for teamNamesContainer as team info is handled by renderTeamInfoCards
+        // and its internal input listeners.
+    }
+
+    document.addEventListener('DOMContentLoaded', initializeApp);
+
+</script>
+</body>
+</html>

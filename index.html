@@ -160,7 +160,7 @@
             <div class="mb-10 p-6 border border-slate-700 rounded-xl bg-slate-700/30">
                 <h3 class="text-xl font-semibold text-sky-300 mb-3">Load from CSV</h3>
                 <p class="text-sm text-slate-400 mb-2">
-                    Columns: <code class="text-sky-400 font-semibold">Category, Detail, Value1, Value2, Value3, Value4, Value5</code>. Header optional. Delimiter (`,` or `;`) auto-detected.
+                    Columns: <code class="text-sky-400 font-semibold">Category, Detail, Value1, Value2, Value3, Value4, Value5</code>. Header optional.
                 </p>
                 <ul class="csv-format-details mb-4">
                     <li><strong>TeamNames:</strong> Cat=<code>TeamNames</code>, Det=<code>Names</code>, Val1-4=<code>Team Names</code></li>
@@ -1040,82 +1040,50 @@
                 const tempCsvData = { teams: [], outrightOdds: {}, r1Matches: [] };
                 let expectedTeamOrderForOutrights = [];
                 let teamNamesRowFound = false;
-                let detectedDelimiter = null;
-
-                // Delimiter detection logic
-                if (rows.length > 0) {
-                    for (let i = 0; i < Math.min(rows.length, 5); i++) { 
-                        const testRow = rows[i];
-                        if (!testRow || testRow.toLowerCase().startsWith('category,detail,value1') || testRow.toLowerCase().startsWith('category;detail;value1')) {
-                            continue; 
-                        }
-                        if (testRow.includes(';')) {
-                            const partsBySemicolon = testRow.split(';');
-                            if (partsBySemicolon.length >= 3) { 
-                                detectedDelimiter = ';';
-                                console.log(`Delimiter detected as Semicolon (';') based on row: "${testRow}"`);
-                                break; 
-                            }
-                        }
-                        if (testRow.includes(',')) { 
-                            const partsByComma = testRow.split(',');
-                             if (partsByComma.length >= 3) {
-                                if (detectedDelimiter === ';') { 
-                                    console.log("Ambiguous: Both ';' and ',' split well. Sticking with ';'.");
-                                } else {
-                                    detectedDelimiter = ',';
-                                    console.log(`Delimiter detected as Comma (',') based on row: "${testRow}"`);
-                                }
-                                break;
-                            }
-                        }
-                    }
-                }
-                 if (!detectedDelimiter) {
-                    detectedDelimiter = ','; 
-                    console.warn("Could not reliably detect delimiter from first few data lines. Defaulting to Comma (',').");
-                }
-                console.log("Final delimiter for parsing:", detectedDelimiter);
-
 
                 rows.forEach((rowStr, rowIndex) => {
-                    if (rowIndex === 0 && (rowStr.toLowerCase().startsWith('category,detail,value1') || rowStr.toLowerCase().startsWith('category;detail;value1')) ) { 
-                        console.log("Skipping header row:", rowStr);
+                    if (rowIndex === 0 && rowStr.toLowerCase().startsWith('category,detail,value1')) { // Comma for header check
+                        console.log("Skipping header row based on comma delimiter:", rowStr);
+                        return; 
+                    }
+                     if (rowIndex === 0 && rowStr.toLowerCase().startsWith('category;detail;value1')) { // Semicolon for header check
+                        console.log("Skipping header row based on semicolon delimiter:", rowStr);
                         return; 
                     }
 
-                    const columns = rowStr.split(detectedDelimiter).map(col => col.trim()); 
-                    // console.log(`Row ${rowIndex + 1} Columns (split by '${detectedDelimiter}'):`, columns); 
+
+                    const columns = rowStr.split(';').map(col => col.trim()); // USE SEMICOLON AS DELIMITER
+                    console.log(`Row ${rowIndex + 1} Columns (split by ';'):`, columns);
 
                     if (columns.length < 1 || !columns[0]) {
                         console.log(`Skipping empty or malformed row ${rowIndex + 1}`);
                         return; 
                     }
                     const category = columns[0].trim().toLowerCase(); 
-                    // console.log(`Row ${rowIndex + 1} Category: '${category}'`);
+                    console.log(`Row ${rowIndex + 1} Category: '${category}'`);
 
 
                     if (category === "teamnames") {
                         teamNamesRowFound = true;
-                        // console.log("Found 'teamnames' category. Columns for names (C-F expected, indices 2-5):", columns.slice(2, 6));
+                        console.log("Found 'teamnames' category. Columns for names (C-F expected, indices 2-5):", columns.slice(2, 6));
                         
                         const potentialNames = [];
-                        for (let k=2; k < 6 && k < columns.length; k++) { 
+                        for (let k=2; k < 6; k++) { 
                             potentialNames.push(columns[k] ? columns[k].trim() : ""); 
                         }
-                        // console.log("Potential names before filter:", potentialNames);
+                        console.log("Potential names before filter:", potentialNames);
 
                         tempCsvData.teams = potentialNames
                                              .filter(name => name && name.length > 0) 
                                              .map(name => ({ name: name })); 
                         
-                        // console.log("Parsed teams:", tempCsvData.teams);
+                        console.log("Parsed teams:", tempCsvData.teams);
 
                         if (tempCsvData.teams.length !== 4) {
-                             throw new Error(`CSV 'TeamNames' row found, but did not yield 4 team names from columns C-F. Found: ${tempCsvData.teams.length} (Names: ${tempCsvData.teams.map(t=>t.name).join(', ')}). Please check these columns in your CSV.`);
+                             throw new Error(`CSV 'TeamNames' row found, but did not yield 4 team names from columns C-F. Found: ${tempCsvData.teams.length} (Names: ${tempCsvData.teams.map(t=>t.name).join(', ')}). Please check columns C, D, E, F for the 'TeamNames' row in your CSV.`);
                         }
                         expectedTeamOrderForOutrights = tempCsvData.teams.map(t => t.name);
-                        // console.log("Expected team order for outrights:", expectedTeamOrderForOutrights);
+                        console.log("Expected team order for outrights:", expectedTeamOrderForOutrights);
 
                     } else if (category === "outrightwinnerodds") {
                         if (expectedTeamOrderForOutrights.length === 0) throw new Error("CSV: TeamNames must be defined before OutrightWinnerOdds.");
@@ -1125,7 +1093,7 @@
                         expectedTeamOrderForOutrights.forEach((teamName, i) => {
                             tempCsvData.outrightOdds[teamName] = oddsValues[i];
                         });
-                         // console.log("Parsed outright odds:", tempCsvData.outrightOdds);
+                         console.log("Parsed outright odds:", tempCsvData.outrightOdds);
 
                     } else if (category === "match") {
                         if (columns.length < 7) throw new Error("CSV: Match row has insufficient columns. Expected 7.");
@@ -1143,11 +1111,11 @@
                         tempCsvData.r1Matches.push({
                             id: matchId, team_a: teamA, team_b: teamB, odds: odds
                         });
-                        // console.log("Parsed match:", tempCsvData.r1Matches[tempCsvData.r1Matches.length - 1]);
+                        console.log("Parsed match:", tempCsvData.r1Matches[tempCsvData.r1Matches.length - 1]);
                     }
                 });
 
-                if (!teamNamesRowFound) { 
+                if (!teamNamesRowFound) { // Check this flag after the loop
                     throw new Error("CSV parsing error: 'TeamNames' category row not found in the CSV file. Ensure the first column of that row is 'TeamNames' (case-insensitive).");
                 }
                 if (tempCsvData.teams.length !== 4) { 
@@ -1156,6 +1124,7 @@
                 if (Object.keys(tempCsvData.outrightOdds).length !== 4) throw new Error("CSV must define outright odds for all 4 teams via an 'OutrightWinnerOdds' row.");
                 if (tempCsvData.r1Matches.length !== 2) throw new Error("CSV must define exactly 2 Round 1 matches via 'Match' rows.");
 
+                // Successfully parsed, now update appState
                 appState.teams = tempCsvData.teams;
                 appState.outrightOddsRaw = tempCsvData.outrightOdds;
                 appState.r1MatchesData = tempCsvData.r1Matches.map(m => ({...m, norm_probs: normalizeProbs(m.odds)}));
@@ -1291,4 +1260,124 @@
         autoAdjustStatusEl.innerHTML += ` Auto-adjustment finished. Final TAD: <strong class="text-sky-400">${totalAbsDiffEl.textContent.split(': ')[1] || 'N/A'}</strong>`;
         appState.isAutoAdjusting = false;
         setButtonsDisabled(false);
-        autoAdjustBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.58
+        autoAdjustBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 00-15.357-2m15.357 2H15" /></svg> Auto-Adjust H2H`;
+    }
+
+
+    // --- Initial Setup and Event Listeners ---
+    function initializeApp() {
+        renderTeamInfoCards(); // Changed from renderTeamNameInputs and renderOutrightOddsInputs
+        renderR1MatchInputs(); 
+        showStep('step1DataInput');
+        autoAdjustStatusEl.textContent = 'Enter data and run simulation to see results.';
+
+
+        document.getElementById('loadCsvBtn').addEventListener('click', handleLoadCsv);
+        viewCsvFormatBtn.addEventListener('click', () => csvFormatModal.classList.add('active'));
+        closeCsvModalBtn.addEventListener('click', () => csvFormatModal.classList.remove('active'));
+        csvFormatModal.addEventListener('click', (e) => { // Close on overlay click
+            if (e.target === csvFormatModal) {
+                csvFormatModal.classList.remove('active');
+            }
+        });
+
+
+        document.getElementById('proceedToH2HBtn').addEventListener('click', () => {
+            if (collectAndValidateStep1Data()) {
+                renderH2HProbsInputs();
+                showStep('step2H2HProbs');
+            }
+        });
+        
+        document.getElementById('backToDataInputBtn').addEventListener('click', () => {
+            renderTeamInfoCards(); 
+            renderR1MatchInputs(); 
+            showStep('step1DataInput');
+        });
+
+        document.getElementById('runSimulationBtn').addEventListener('click', () => {
+            if (collectAndValidateH2HProbs()) { 
+                displayGlobalMessage('Running simulation...', 'info');
+                setButtonsDisabled(true);
+                setTimeout(() => { 
+                    runSimulationJS();
+                    renderSimulationResults();
+                    showStep('step3SimResults');
+                    displayGlobalMessage('Simulation complete!', 'success');
+                    autoAdjustStatusEl.textContent = 'Manual simulation run. Review results or adjust H2H.'; 
+                    setButtonsDisabled(false);
+                }, 50);
+            }
+        });
+        
+        document.getElementById('autoAdjustH2HBtn').addEventListener('click', () => {
+            if (appState.isAutoAdjusting) return;
+            if (collectAndValidateH2HProbs()){ 
+                 autoAdjustLoop(); 
+            }
+        });
+
+        document.getElementById('manualAdjustH2HBtn').addEventListener('click', () => {
+            renderH2HProbsInputs(); 
+            showStep('step2H2HProbs');
+            autoAdjustStatusEl.textContent = 'Manually adjust H2H probabilities below.'; 
+        });
+
+        document.getElementById('finalizeOddsBtn').addEventListener('click', () => {
+            renderFinalOdds();
+            showStep('step4FinalOdds');
+            autoAdjustStatusEl.textContent = ''; 
+        });
+        
+        marginInputEl.addEventListener('change', () => {
+            const newMarginPercent = parseFloat(marginInputEl.value);
+            if (!isNaN(newMarginPercent) && newMarginPercent >= 0 && newMarginPercent <= 50) {
+                appState.currentMargin = newMarginPercent / 100;
+                marginDisplayEl.textContent = (appState.currentMargin * 100).toFixed(1);
+                if(document.getElementById('step4FinalOdds').classList.contains('hidden') === false){
+                    renderFinalOdds(); 
+                }
+            } else {
+                displayGlobalMessage('Invalid margin. Must be between 0 and 50%.', 'error');
+                marginInputEl.value = (appState.currentMargin * 100).toFixed(1); 
+            }
+        });
+
+        document.getElementById('startOverBtn').addEventListener('click', () => {
+            if (appState.isAutoAdjusting) {
+                displayGlobalMessage('Cannot start over during auto-adjustment. Please wait or refresh.', 'error');
+                return;
+            }
+            appState = {
+                teams: [], 
+                outrightOddsRaw: {}, 
+                r1MatchesData: [], 
+                matchSchedule: [], 
+                h2hFairProbs: {}, 
+                targetOutrightProbsMap: {}, 
+                simulatedOutrightsFreq: {},
+                numSimIterations: 10000,
+                currentMargin: 0.07,
+                isAutoAdjusting: false
+            };
+            renderTeamInfoCards();
+            renderR1MatchInputs(); 
+            h2hProbsContainer.innerHTML = '';
+            resultsTableBody.innerHTML = '<tr><td colspan="4" class="table-td text-center text-slate-400 py-8">No data yet.</td></tr>';
+            finalOddsContainer.innerHTML = '';
+            totalAbsDiffEl.textContent = 'Total Absolute Difference: N/A';
+            autoAdjustStatusEl.textContent = 'Enter data and run simulation to see results.';
+            document.getElementById('csvFile').value = ''; 
+            showStep('step1DataInput');
+            displayGlobalMessage('Form reset. Please start over.', 'info');
+        });
+
+        // No longer need separate listener for teamNamesContainer as team info is handled by renderTeamInfoCards
+        // and its internal input listeners.
+    }
+
+    document.addEventListener('DOMContentLoaded', initializeApp);
+
+</script>
+</body>
+</html>
